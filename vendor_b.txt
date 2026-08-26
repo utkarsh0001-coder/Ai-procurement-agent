@@ -1,0 +1,1 @@
+echo "We can do 450 units at Rs 72000 total. Full payment upfront required. Ships in 2 weeks." > vendor_b.txt

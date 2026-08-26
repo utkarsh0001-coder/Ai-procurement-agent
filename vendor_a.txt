@@ -1,0 +1,1 @@
+echo "We quote INR 85000 for 500 packaging boxes. Delivery within 10 working days. Payment: 50% advance, balance on delivery." > vendor_a.txt

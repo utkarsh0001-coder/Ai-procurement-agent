@@ -1,0 +1,1 @@
+echo "Quote: 500 units, Rs 79000 total, delivery in 12 days, Net 30 payment terms." > vendor_c.txt
