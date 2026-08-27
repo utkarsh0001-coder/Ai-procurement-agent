@@ -1,1 +1,1 @@
-echo "Quote: 500 units, Rs 79000 total, delivery in 12 days, Net 30 payment terms." > vendor_c.txt
+We can offer ₹1,19,000 flat for the batch of 600 pcs, including packaging. Payment on 60-day credit terms. Please note this is stock dependent — could take up to 4 weeks in the worst case, but usually ships within 15 days.

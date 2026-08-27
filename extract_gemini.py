@@ -38,12 +38,27 @@ def extract_quote(quote_text: str) -> dict:
 
 Read the quote below and return ONLY a JSON object (no other text,
 no markdown code fences) with these exact fields:
-- price (number, just the number, no currency symbol)
+- price (number, the TOTAL price for the full order, no currency symbol)
 - currency (e.g. "INR", "USD")
 - quantity (number, if mentioned, else null)
 - delivery_days (number of days until delivery, if mentioned, else null)
-- payment_terms (short string, e.g. "50% advance", "Net 30")
+- payment_terms (short string capturing the FULL payment structure,
+  e.g. "50% advance, balance on delivery", "30% advance + 2 installments
+  at 15/30 days", "60-day credit terms")
 - conditions (short string summarizing any other conditions, or "" if none)
+
+IMPORTANT rules for tricky quotes:
+1. If the quote gives a PER-UNIT or PER-PIECE rate (e.g. "Rs 197 per unit")
+   instead of a total, you MUST calculate the total yourself:
+   total_price = unit_price x quantity. Return that calculated TOTAL as
+   "price", never the per-unit rate alone.
+2. If delivery is given as a RANGE (e.g. "18-20 days" or "usually 15 days,
+   worst case 4 weeks"), use the WORST-CASE (longest/latest) number for
+   "delivery_days", since that is the safer number for planning purposes.
+   Convert weeks to days (1 week = 7 days) if needed.
+3. If a discount is conditional (e.g. "3% off if paid within 15 days"),
+   report the STANDARD/default price as "price", and mention the
+   conditional discount in "conditions" instead.
 
 Quote:
 {quote_text}
@@ -75,12 +90,11 @@ Return ONLY the JSON object, nothing else."""
 
 # ---- Quick test ----
 if __name__ == "__main__":
-    
     sample_quote = """
-Chapter 4: The History of Renaissance Art
-The Renaissance period, spanning roughly the 14th to 17th century...
-"""
-
+    Dear Sir, thank you for your interest. We quote INR 85,000 for
+    500 packaging boxes. Delivery within 10 working days.
+    Payment: 50% advance, balance on delivery.
+    """
 
     result = extract_quote(sample_quote)
     print("Extracted data:")

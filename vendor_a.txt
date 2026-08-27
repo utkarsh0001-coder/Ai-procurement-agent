@@ -1,1 +1,2 @@
-echo "We quote INR 85000 for 500 packaging boxes. Delivery within 10 working days. Payment: 50% advance, balance on delivery." > vendor_a.txt
+We're pleased to offer ₹1,18,500 total for 600 units, subject to a 3% discount if paid within 15 days, otherwise standard 45-day payment terms apply. Delivery: 18-20 business days depending on customs clearance for imported components.
+

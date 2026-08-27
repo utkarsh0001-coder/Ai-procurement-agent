@@ -51,25 +51,51 @@ def _normalize_delivery(value, all_values):
 def _score_payment_terms(payment_terms: str) -> float:
     """
     Payment terms are text, not numbers, so we can't "normalize" them
-    the same way. Instead we use simple keyword rules to estimate how
-    much cash-flow risk each term implies for the buyer.
+    the same way. Instead we use rules to estimate how much cash-flow
+    risk each term implies for the buyer.
 
-    100 = safest for buyer (pay after delivery)
+    100 = safest for buyer (pay after delivery, on credit)
     0   = riskiest for buyer (pay everything upfront)
 
-    This is a simplification -- a real version could ask Claude/Gemini
-    to score this itself, but a clear rule-based version is easier to
-    explain and defend in a demo.
+    Handles both exact phrases ("Net 30", "50% advance") and realistic
+    variations ("30% advance + installments", "45-day terms",
+    "60-day credit"), using a percentage-based read of how much cash
+    the buyer has to pay before receiving goods.
     """
+    import re
     text = payment_terms.lower()
 
-    if "full" in text and ("advance" in text or "upfront" in text):
-        return 20   # riskiest -- all cash paid before receiving anything
-    if "50%" in text:
-        return 60   # moderate -- half paid upfront
-    if "net 30" in text or "net 60" in text or "after delivery" in text:
-        return 100  # safest -- pay after receiving goods
-    return 50  # unknown/unclear terms -- treat as medium risk
+    # Case 1: full payment before delivery -- riskiest for the buyer
+    full_upfront = ("full" in text and ("advance" in text or "upfront" in text)) or "100%" in text
+    if full_upfront:
+        return 20
+
+    # Case 2: an explicit advance percentage is mentioned -- the lower
+    # the upfront percentage, the safer this is for the buyer.
+    pct_match = re.search(r"(\d{1,3})\s*%\s*(?:advance|upfront|down)", text)
+    if pct_match:
+        pct = int(pct_match.group(1))
+        if pct <= 30:
+            return 70   # small upfront share, rest deferred
+        elif pct <= 50:
+            return 60   # moderate upfront share
+        else:
+            return 40   # majority paid upfront
+
+    # Case 3: deferred/credit-style terms -- "Net 30", "60-day credit",
+    # "45-day terms", "after delivery" -- no cash required upfront.
+    net_match = re.search(r"net\s*\d+", text)
+    has_credit_wording = any(w in text for w in ["credit", "terms", "after delivery"])
+    day_number_found = re.search(r"\d+\s*[- ]?\s*day", text)
+    if net_match or (has_credit_wording and day_number_found):
+        return 100  # clearly deferred payment -- safest
+    if day_number_found and not any(w in text for w in ["advance", "upfront", "down"]):
+        # A day count is mentioned with no upfront wording at all --
+        # reasonably assume payment is deferred, though less certain
+        # than an explicit "credit"/"terms" label.
+        return 85
+
+    return 50  # unclear/unlisted terms -- default to medium risk
 
 
 def score_vendors(quotes: list[dict]) -> list[dict]:
@@ -116,7 +142,7 @@ if __name__ == "__main__":
     sample_quotes = [
         {
             "vendor": "Vendor A",
-            "price": 79000,
+            "price": 85000,
             "currency": "INR",
             "quantity": 500,
             "delivery_days": 10,

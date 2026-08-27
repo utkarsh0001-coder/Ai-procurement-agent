@@ -41,6 +41,68 @@ def read_uploaded_file(uploaded_file) -> str:
 
 # ---------------- Page setup ----------------
 st.set_page_config(page_title="AI Procurement Agent", layout="centered")
+
+# ---------------- Animated background theme ----------------
+# Dark navy backdrop with slow-drifting soft "cloud" glows, like light
+# breaking through atmosphere into deep blue. Pure CSS -- no images,
+# no external assets, works entirely inside Streamlit's markdown.
+st.markdown("""
+<style>
+/* Base dark navy gradient across the whole app */
+.stApp {
+    background: radial-gradient(ellipse at top left, #16324f 0%, #0b1f3a 45%, #060f1f 100%);
+    background-attachment: fixed;
+}
+
+/* The drifting "cloud break" layer -- soft blurred glows that slowly move */
+.stApp::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse 900px 550px at 15% -10%, rgba(255,255,255,0.14), transparent 60%),
+        radial-gradient(ellipse 700px 450px at 90% 5%, rgba(143,211,238,0.10), transparent 60%),
+        radial-gradient(ellipse 800px 600px at 50% 105%, rgba(19,117,145,0.35), transparent 65%);
+    filter: blur(45px);
+    animation: driftClouds 22s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+@keyframes driftClouds {
+    0%   { transform: translate(0%, 0%) scale(1); }
+    50%  { transform: translate(3%, 2%) scale(1.06); }
+    100% { transform: translate(-3%, -2%) scale(1); }
+}
+
+/* Keep actual content above the animated layer */
+.block-container { position: relative; z-index: 1; }
+
+/* Light text, since the background is now dark */
+h1, h2, h3, p, span, label, .stMarkdown, .stCaption { color: #EAF1F8 !important; }
+
+/* Glass-style buttons to match the theme */
+.stButton > button, .stDownloadButton > button {
+    background: rgba(255,255,255,0.10) !important;
+    color: #EAF1F8 !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(6px);
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background: rgba(201,162,39,0.25) !important;
+    border: 1px solid #C9A227 !important;
+}
+
+/* Text areas / number inputs / text inputs -- glass look */
+.stTextArea textarea, .stNumberInput input, .stTextInput input {
+    background: rgba(255,255,255,0.08) !important;
+    color: #EAF1F8 !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("AI Procurement Agent")
 st.write(
     "Upload 2-4 vendor quotes (PDF or text). "
