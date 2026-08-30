@@ -23,6 +23,22 @@ from negotiate import draft_negotiation_email
 from po_generator import generate_po_pdf
 
 
+def glass_box(text: str, kind: str = "info") -> None:
+    """
+    Renders a message in a glass-style box using OUR OWN html/css,
+    instead of st.info/st.warning. Streamlit's built-in alert boxes
+    are styled via internal class names that change between Streamlit
+    versions, which is unreliable to target with custom CSS. This
+    function sidesteps that entirely: we write the div and the class
+    name ourselves, so the CSS in the theme block always matches,
+    regardless of which Streamlit version is running.
+    kind: "info", "warning", or "success" -- controls the left accent
+    color and icon.
+    """
+    icon = {"info": "\u2139\ufe0f", "warning": "\u26a0\ufe0f", "success": "\u2705"}.get(kind, "\u2139\ufe0f")
+    st.html(f'<div class="glass-box glass-{kind}">{icon}&nbsp;&nbsp;{text}</div>')
+
+
 def read_uploaded_file(uploaded_file) -> str:
     """
     Turns an uploaded file (from Streamlit's file uploader) into
@@ -43,65 +59,139 @@ def read_uploaded_file(uploaded_file) -> str:
 st.set_page_config(page_title="AI Procurement Agent", layout="centered")
 
 # ---------------- Animated background theme ----------------
-# Dark navy backdrop with slow-drifting soft "cloud" glows, like light
-# breaking through atmosphere into deep blue. Pure CSS -- no images,
-# no external assets, works entirely inside Streamlit's markdown.
-st.markdown("""
+# Premium top-to-bottom purple gradient (bright violet glow up top,
+# fading through indigo into near-black at the bottom) with a
+# drifting nebula glow layer, in the spirit of the reference mock.
+# Uses an explicit fixed <div> layer (more reliable across Streamlit
+# versions than a CSS pseudo-element, which some Streamlit themes
+# can suppress).
+st.html("""
+<div id="animated-bg"></div>
 <style>
-/* Base dark navy gradient across the whole app */
+/* Base gradient: bright violet at the top, sinking to near-black */
 .stApp {
-    background: radial-gradient(ellipse at top left, #16324f 0%, #0b1f3a 45%, #060f1f 100%);
-    background-attachment: fixed;
+background: linear-gradient(180deg,
+#4C2A85 0%,
+#331E63 22%,
+#221244 45%,
+#150B2C 70%,
+#0A0616 100%) !important;
+background-attachment: fixed;
 }
 
-/* The drifting "cloud break" layer -- soft blurred glows that slowly move */
-.stApp::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background:
-        radial-gradient(ellipse 900px 550px at 15% -10%, rgba(255,255,255,0.14), transparent 60%),
-        radial-gradient(ellipse 700px 450px at 90% 5%, rgba(143,211,238,0.10), transparent 60%),
-        radial-gradient(ellipse 800px 600px at 50% 105%, rgba(19,117,145,0.35), transparent 65%);
-    filter: blur(45px);
-    animation: driftClouds 22s ease-in-out infinite alternate;
-    z-index: 0;
-    pointer-events: none;
+/* Explicit animated nebula/glow layer, fixed behind all content */
+#animated-bg {
+position: fixed;
+top: -10%; left: -10%; right: -10%; bottom: -10%;
+width: 120%; height: 120%;
+background:
+radial-gradient(ellipse 900px 550px at 20% 0%, rgba(196,181,253,0.28), transparent 60%),
+radial-gradient(ellipse 750px 500px at 85% 10%, rgba(167,139,250,0.16), transparent 60%),
+radial-gradient(ellipse 800px 650px at 50% 105%, rgba(76,42,133,0.55), transparent 65%);
+filter: blur(55px);
+animation: driftClouds 20s ease-in-out infinite alternate;
+z-index: 0;
+pointer-events: none;
 }
 @keyframes driftClouds {
-    0%   { transform: translate(0%, 0%) scale(1); }
-    50%  { transform: translate(3%, 2%) scale(1.06); }
-    100% { transform: translate(-3%, -2%) scale(1); }
+0%   { transform: translate(0%, 0%) scale(1); }
+50%  { transform: translate(3%, 4%) scale(1.08); }
+100% { transform: translate(-3%, -2%) scale(1); }
 }
 
 /* Keep actual content above the animated layer */
-.block-container { position: relative; z-index: 1; }
+.block-container, [data-testid="stHeader"], [data-testid="stToolbar"] {
+position: relative;
+z-index: 1;
+}
+[data-testid="stHeader"] { background: transparent !important; }
 
 /* Light text, since the background is now dark */
-h1, h2, h3, p, span, label, .stMarkdown, .stCaption { color: #EAF1F8 !important; }
+h1, h2, h3, p, span, label, .stMarkdown, .stCaption { color: #F2EEFB !important; }
+h1 { text-shadow: 0 0 24px rgba(167,139,250,0.35); }
 
 /* Glass-style buttons to match the theme */
 .stButton > button, .stDownloadButton > button {
-    background: rgba(255,255,255,0.10) !important;
-    color: #EAF1F8 !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
-    border-radius: 10px !important;
-    backdrop-filter: blur(6px);
+background: rgba(255,255,255,0.08) !important;
+color: #F2EEFB !important;
+border: 1px solid rgba(196,181,253,0.30) !important;
+border-radius: 10px !important;
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+transition: all 0.2s ease;
 }
 .stButton > button:hover, .stDownloadButton > button:hover {
-    background: rgba(201,162,39,0.25) !important;
-    border: 1px solid #C9A227 !important;
+background: rgba(167,139,250,0.22) !important;
+border: 1px solid #A78BFA !important;
+box-shadow: 0 0 16px rgba(167,139,250,0.35);
 }
 
 /* Text areas / number inputs / text inputs -- glass look */
 .stTextArea textarea, .stNumberInput input, .stTextInput input {
-    background: rgba(255,255,255,0.08) !important;
-    color: #EAF1F8 !important;
-    border-radius: 10px !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
+background: rgba(255,255,255,0.06) !important;
+color: #F2EEFB !important;
+border-radius: 10px !important;
+border: 1px solid rgba(196,181,253,0.22) !important;
+backdrop-filter: blur(6px);
+-webkit-backdrop-filter: blur(6px);
+}
+
+/* ---- True glassmorphism for content "message" boxes ----
+These target OUR OWN .glass-box class (rendered by the glass_box()
+helper in app.py as raw HTML) instead of Streamlit's internal
+data-testid names, which change between Streamlit versions and are
+unreliable to target from custom CSS. Because we write both the div
+and the CSS ourselves, this is guaranteed to match regardless of
+Streamlit version. */
+.glass-box {
+background: rgba(255,255,255,0.08) !important;
+border: 1px solid rgba(196,181,253,0.28) !important;
+border-left: 4px solid rgba(196,181,253,0.55) !important;
+border-radius: 14px !important;
+padding: 14px 18px !important;
+margin: 8px 0 !important;
+backdrop-filter: blur(14px) saturate(140%);
+-webkit-backdrop-filter: blur(14px) saturate(140%);
+box-shadow: 0 4px 30px rgba(0,0,0,0.15);
+color: #F2EEFB !important;
+}
+.glass-warning { border-left-color: #F5C563 !important; }
+.glass-success { border-left-color: #7EE0A8 !important; }
+.glass-info { border-left-color: #A78BFA !important; }
+
+/* File uploader dropzone -- best-effort selectors since this one
+still comes from Streamlit's own component, not our HTML */
+[data-testid="stFileUploaderDropzone"],
+[data-testid="stExpander"] {
+background: rgba(255,255,255,0.07) !important;
+border: 1px solid rgba(196,181,253,0.22) !important;
+border-radius: 14px !important;
+backdrop-filter: blur(14px) saturate(140%);
+-webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+[data-testid="stDataFrame"],
+[data-testid="stDataFrameResizable"],
+[data-testid="stElementContainer"]:has([data-testid="stDataFrame"]) {
+background: rgba(255,255,255,0.05) !important;
+border-radius: 14px !important;
+border: 1px solid rgba(196,181,253,0.18) !important;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+overflow: hidden;
+}
+
+/* Fallback: Streamlit's legacy class-based markup (pre-testid era,
+still shipped alongside data-testid in some versions) */
+.stAlert, .element-container .stAlert {
+background: rgba(255,255,255,0.07) !important;
+border: 1px solid rgba(196,181,253,0.22) !important;
+border-radius: 14px !important;
+backdrop-filter: blur(14px) saturate(140%);
+-webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 st.title("AI Procurement Agent")
 st.write(
@@ -135,9 +225,10 @@ if uploaded_files:
         # If price is missing, this probably wasn't a real quote --
         # warn the user instead of silently including broken data.
         if extracted.get("price") is None:
-            st.warning(
+            glass_box(
                 f"Couldn't find price/quote details in '{f.name}'. "
-                "Skipping this file -- please check it's a vendor quote."
+                "Skipping this file -- please check it's a vendor quote.",
+                kind="warning",
             )
             continue
 
@@ -161,7 +252,7 @@ if uploaded_files:
         st.subheader("3. AI Recommendation")
         with st.spinner("Generating recommendation..."):
             recommendation = generate_recommendation(ranked)
-        st.info(recommendation)
+        glass_box(recommendation, kind="info")
 
         # ---------------- Step 5: Negotiation Email ----------------
         st.subheader("4. Negotiation Email Draft")
@@ -217,7 +308,7 @@ if uploaded_files:
             st.success("Purchase order generated -- click above to download.")
 
     elif len(quotes) == 1:
-        st.warning("Upload at least 2 valid vendor quotes to compare and score them.")
+        glass_box("Upload at least 2 valid vendor quotes to compare and score them.", kind="warning")
 
 else:
     st.write("Waiting for quotes to be uploaded.")
